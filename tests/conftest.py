@@ -142,8 +142,10 @@ def tmpdir(request, tmpdir):
     to return our typical path object instead of py.path.local as well as
     deleting the temporary directories at the end of each test case.
     """
+    tmpdir_str = str(tmpdir)
+    tmpdir = Path(tmpdir_str)
     assert tmpdir.isdir()
-    yield Path(str(tmpdir))
+    yield tmpdir
     # Clear out the temporary directory after the test has finished using it.
     # This should prevent us from needing a multiple gigabyte temporary
     # directory while running the tests.
