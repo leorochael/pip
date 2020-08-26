@@ -143,7 +143,23 @@ def tmpdir(request, tmpdir):
     deleting the temporary directories at the end of each test case.
     """
     assert tmpdir.isdir()
-    yield Path(str(tmpdir))
+    # On some *nix systems bound to AD domains, the $USER environment is of the
+    # form `DOMAIN\username`, which generates a tmpdir of the form:
+    #
+    # /tmp/pytest-of-DOMAN\username/pytest-XX/test_nameX
+    #
+    # When passed into pip commands, these paths get translated into:
+    #
+    # /tmp/pytest-of-DOMANusername/pytest-XX/test_nameX
+    #
+    # The backslash also broke the `shutil.rmtree()` down below, causing
+    # failures in future test runs.
+    #
+    # So here we replace all backslashes with forward slashes, which should
+    # work on *nix and Windows machines:
+    tmpdir_str = str(tmpdir).replace('\\', '/')
+    tmpdir = Path(tmpdir_str)
+    yield tmpdir
     # Clear out the temporary directory after the test has finished using it.
     # This should prevent us from needing a multiple gigabyte temporary
     # directory while running the tests.
