@@ -563,11 +563,10 @@ def make_fake_html_response(url):
     return pretend.stub(content=content, url=url, headers={})
 
 
-def test_get_html_page_directory_append_index(tmpdir):
+def test_get_html_page_directory_append_index():
     """`_get_html_page()` should append "index.html" to a directory URL.
     """
-    dirpath = tmpdir / "something"
-    dirpath.mkdir()
+    dirpath = "/sometmp/something"
     dir_url = "file:///{}".format(
         urllib_request.pathname2url(dirpath).lstrip("/"),
     )
@@ -576,12 +575,20 @@ def test_get_html_page_directory_append_index(tmpdir):
     session = mock.Mock(PipSession)
     fake_response = make_fake_html_response(expected_url)
     mock_func = mock.patch("pip._internal.index.collector._get_html_response")
-    with mock_func as mock_func:
+    mock_isdir = mock.patch("os.path.isdir", return_value=True)
+    mock_url2pathname = mock.patch(
+        "pip._vendor.six.moves.urllib.request.url2pathname",
+        side_effect=lambda url: url,
+    )
+    with mock_func as mock_func, mock_isdir as mock_isdir, mock_url2pathname:
         mock_func.return_value = fake_response
         actual = _get_html_page(Link(dir_url), session=session)
         assert mock_func.mock_calls == [
             mock.call(expected_url, session=session),
         ], 'actual calls: {}'.format(mock_func.mock_calls)
+        assert mock_isdir.mock_calls == [
+            mock.call(dirpath)
+        ], 'actual calls: {}'.format(mock_isdir.mock_calls)
 
         assert actual.content == fake_response.content
         assert actual.encoding is None
