@@ -26,7 +26,7 @@ from pip._internal.locations import USER_CACHE_DIR, get_src_prefix
 from pip._internal.models.format_control import FormatControl
 from pip._internal.models.index import PyPI
 from pip._internal.models.target_python import TargetPython
-from pip._internal.utils.hashes import STRONG_HASHES
+from pip._internal.utils.hashes import ALLOWED_HASHES
 from pip._internal.utils.typing import MYPY_CHECK_RUNNING
 
 if MYPY_CHECK_RUNNING:
@@ -828,15 +828,17 @@ def _handle_merge_hash(option, opt_str, value, parser):
     pointed to in a dict by the algo name."""
     if not parser.values.hashes:
         parser.values.hashes = {}
+    if value == 'none':
+        value += ':'
     try:
         algo, digest = value.split(':', 1)
     except ValueError:
-        parser.error('Arguments to {} must be a hash name '  # noqa
+        parser.error('Arguments to {} must be "none" or a hash name '  # noqa
                      'followed by a value, like --hash=sha256:'
-                     'abcde...'.format(opt_str))
-    if algo not in STRONG_HASHES:
+                     'abcde... or --hash=none'.format(opt_str))
+    if algo not in ALLOWED_HASHES:
         parser.error('Allowed hash algorithms for {} are {}.'.format(  # noqa
-                     opt_str, ', '.join(STRONG_HASHES)))
+                     opt_str, ', '.join(ALLOWED_HASHES)))
     parser.values.hashes.setdefault(algo, []).append(digest)
 
 

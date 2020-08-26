@@ -514,6 +514,21 @@ def test_hashed_install_success(script, data, tmpdir):
         script.pip_install_local('-r', reqs_file.resolve())
 
 
+def test_none_hash_install_success(script, data, tmpdir):
+    """
+    Test installing multiple packages with hashes work, even if one of the
+    hashes is "none".
+    """
+    file_url = path_to_url(
+        (data.packages / 'simple-1.0.tar.gz').resolve())
+    with requirements_file(
+            'simple2==1.0 --hash=sha256:9336af72ca661e6336eb87bc7de3e8844d853e'
+            '3848c2b9bbd2e8bf01db88c2c7\n'
+            '{simple} --hash=none'.format(simple=file_url),
+            tmpdir) as reqs_file:
+        script.pip_install_local('-r', reqs_file.resolve())
+
+
 def test_hashed_install_failure(script, tmpdir):
     """Test that wrong hashes stop installation.
 

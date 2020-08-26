@@ -14,7 +14,7 @@ from pip._internal.utils.typing import MYPY_CHECK_RUNNING
 
 if MYPY_CHECK_RUNNING:
     from typing import (
-        Dict, List, BinaryIO, NoReturn, Iterator
+        Dict, List, BinaryIO, NoReturn, Iterator, Union
     )
     from pip._vendor.six import PY3
     if PY3:
@@ -28,9 +28,26 @@ if MYPY_CHECK_RUNNING:
 FAVORITE_HASH = 'sha256'
 
 
-# Names of hashlib algorithms allowed by the --hash option and ``pip hash``
+# Names of hashlib algorithms allowed by ``pip hash``.
 # Currently, those are the ones at least as collision-resistant as sha256.
 STRONG_HASHES = ['sha256', 'sha384', 'sha512']
+
+
+# Names of hash algorithms allowed by the --hash option.
+# Includes all hashes allowed by ``pip hash`` plus ``none`` for skipping the
+# hash check for a package.
+ALLOWED_HASHES = STRONG_HASHES + ['none']
+
+
+class _NoneHash(object):
+
+    def update(self, data):
+        # type: (bytes) -> None
+        pass
+    
+    def hexdigest(self):
+        # type: () -> str
+        return ''
 
 
 class Hashes(object):
@@ -83,7 +100,7 @@ class Hashes(object):
         gots = {}
         for hash_name in iterkeys(self._allowed):
             try:
-                gots[hash_name] = hashlib.new(hash_name)
+                gots[hash_name] = self._get_hash_implementation(hash_name)
             except (ValueError, TypeError):
                 raise InstallationError(
                     'Unknown hash name: {}'.format(hash_name)
@@ -97,6 +114,13 @@ class Hashes(object):
             if got.hexdigest() in self._allowed[hash_name]:
                 return
         self._raise(gots)
+
+    @staticmethod
+    def _get_hash_implementation(hash_name):
+        # type: (str) -> Union[_Hash, _NoneHash]
+        if hash_name == 'none':
+            return _NoneHash()
+        return hashlib.new(hash_name)
 
     def _raise(self, gots):
         # type: (Dict[str, _Hash]) -> NoReturn
