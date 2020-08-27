@@ -130,6 +130,12 @@ class Path(_base):
         """
         return os.path.exists(self)
 
+    def isdir(self):
+        """
+        Returns True if the path exists.
+        """
+        return os.path.isdir(self)
+
     def mkdir(self, mode=0x1FF, exist_ok=False, parents=False):  # 0o777
         """
         Creates a directory, if it doesn't exist already.
